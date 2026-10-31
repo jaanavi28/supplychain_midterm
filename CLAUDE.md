@@ -22,10 +22,12 @@
 - Course conventions (knowledge/docs/course_forecasting_concepts.md): E = F − D, bias = ΣE, TS = bias / MAD.
 - Selection rule: lowest holdout MAPE wins (naive may win).
 - σ for safety stock = 1.25 × MAD of the chosen method's 12 holdout errors.
-- Policy review triggers: MAPE > 30%, tracking signal outside ±6.
+- Policy review triggers: MAPE > 30%, |TS| > 6, policy/memo conflict, promo adjustment > +50% (needs planner approval).
+- Promo adjustment = promo_lift output for the matching type (no fixed cap).
+- Holdout accuracy and σ come from the fit on weeks 1–118; forward forecast from a refit on weeks 1–130. Label which fit each number comes from.
 - Libraries: streamlit, anthropic, pandas, numpy only (no statsmodels, no scikit-learn; search_knowledge uses plain keyword matching).
 - Verification export: verification/sku217390_series.csv.
 
 ## Done =
 - App runs locally and on Streamlit, 5 tests produce evidence JSON, README lets the instructor reproduce a run.
-- Success: (a) lowest-MAPE method selected per SKU, 217390 beats naive; (b) 100% of output numbers match tool output and the Excel check; (c) review triggered whenever MAPE > 30%, TS outside ±6, or a policy/memo conflict exists.
+- Success: (a) lowest-MAPE method selected per SKU, 217390 beats naive; (b) 100% of output numbers match tool output and the Excel check; (c) review triggered whenever MAPE > 30%, |TS| > 6, a policy/memo conflict, or adjustment > +50%.

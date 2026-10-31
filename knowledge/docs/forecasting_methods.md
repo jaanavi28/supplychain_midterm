@@ -1,7 +1,7 @@
 ---
 title: Project Forecasting Definitions (store 8023)
 source: Written for this project by the owner; implemented in analytics/forecast.py and analytics/inventory.py.
-version: v1, 2026-10-31
+version: v2, 2026-10-31
 type: project-specific method definitions (not synthetic data)
 purpose: Defines how this project tests, selects and uses forecasts. General course definitions and formulas are in course_forecasting_concepts.md.
 ---
@@ -38,12 +38,28 @@ specific to this project.
 - The method with the **lowest holdout MAPE** is selected. Naive is allowed to win.
 - MAPE is compared at 2 decimal places; an exact tie goes to the simpler method (naive, then MA(8), then SES, then Holt).
 
-## 6. Forecast for future weeks
-- The selected method is refit on **all 130 weeks** and forecasts weeks 131 onward.
-- An optional judgmental adjustment % (e.g., a promotion) is applied on top of this baseline. It must be supported by the promo_lift tool and stay within the policy cap.
+## 6. Two fits: holdout fit vs refit
+| Number | Comes from |
+|---|---|
+| Holdout MAPE, MAD, bias, tracking signal | **Holdout fit**: fitted on weeks 1–118, scored on weeks 119–130 |
+| Fitted α, β, L0, T0 used for accuracy | **Holdout fit** (weeks 1–118) |
+| σ for safety stock (1.25 × MAD) | **Holdout fit** (weeks 1–118) |
+| Forward forecast (weeks 131 onward) and its parameters | **Refit** of the selected method on **all 130 weeks** |
+| Forecast over lead time, ROP | **Refit** forecast (+ holdout-fit σ for the safety-stock part) |
+- Every number the agent reports must say which fit it comes from.
+- The refit can have different α/β than the holdout fit (more data); this is expected.
 
-## 7. σ and safety stock
-- **σ = 1.25 × MAD** of the selected method's 12 holdout errors (course approximation, assumes normal errors), in units/week.
+## 7. Promotion adjustment
+- An optional adjustment % is applied on top of the refit baseline. It must equal the promo_lift tool output for the matching promo type (see forecasting_policy.md, Section 4).
+- promo_lift compares average units in promo weeks with average units in normal weeks (not featured, not on display, discount < 5%) over all 130 weeks.
+
+## 8. σ and safety stock
+- **σ = 1.25 × MAD** of the selected method's 12 holdout errors from the **holdout fit** (course approximation, assumes normal errors), in units/week.
 - **Safety stock SS = z · σ · √L**, where z is the standard normal value for the cycle service level and L is the lead time in weeks.
 - **Forecast over lead time** = sum of the next L weekly forecasts (after any adjustment).
 - **Reorder point ROP = forecast over lead time + SS**, in units.
+
+## 9. Limitations
+- **Tracking signal is stricter here than in Chopra.** The course tracks TS period by period as an adaptive forecast is updated. This project computes TS once, on a single fixed-origin 12-week forecast that is never updated. A flat forecast that starts too low stays too low for all 12 weeks, so errors pile up in one direction and |TS| reaches 6 more easily.
+- One fixed origin gives a single 12-week accuracy sample; a different origin could rank the methods differently.
+- Smoothing constants chosen by in-sample MSE can sit at the edge of the grid (e.g., α = 0.01), which makes SES/Holt behave almost like a flat average or a fixed trend line.

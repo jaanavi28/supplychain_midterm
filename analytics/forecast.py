@@ -97,7 +97,7 @@ def run_forecasts(sku_id, horizon=4, adjustment_pct=0.0):
     results = {}
     for m in METHODS:
         fc, params = fit_and_forecast(m, train, HOLDOUT_WEEKS)
-        results[m] = {**accuracy(holdout, fc), "params": params,
+        results[m] = {"fit": "holdout fit (weeks 1-118)", **accuracy(holdout, fc), "params": params,
                       "holdout_forecast": [round(float(v), 2) for v in fc]}
 
     # Lowest MAPE wins; ties go to the simpler method (METHODS order).
@@ -115,9 +115,10 @@ def run_forecasts(sku_id, horizon=4, adjustment_pct=0.0):
         "selected_method": selected,
         "selection_rule": "lowest holdout MAPE; ties go to the simpler method",
         "sigma_error": results[selected]["sigma_error"],
+        "sigma_error_fit": "holdout fit (weeks 1-118)",
         "future_forecast": {
+            "fit": "refit (weeks 1-130)",
             "weeks": f"131-{130 + horizon}",
-            "fitted_on": "weeks 1-130",
             "params": future_params,
             "base": [round(float(v), 2) for v in future],
             "adjustment_pct": adjustment_pct,

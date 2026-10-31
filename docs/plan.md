@@ -4,6 +4,8 @@ This replaces rev 2 entirely. Build from this file.
 
 **Rev 3.1 (2026-10-31):** aligned with course conventions (course_forecasting_concepts.md): E = F − D, σ = 1.25 × MAD, numpy SES/Holt per Chopra, statsmodels removed, tracking signal outside ±6 added as a review trigger.
 
+**Rev 3.2 (2026-10-31):** promo adjustment = promo_lift output (no fixed cap; > +50% needs planner approval); per-SKU service levels; outputs label holdout fit vs refit; T2 criteria updated.
+
 ## Context
 BIA674 Individual Midterm, Option B: an agentic prototype that sequences actions, uses analytical/retrieval tools, checks its results and recommends a decision. Topic: **Demand Forecasting (Module 5)**, linked to inventory/S&OP. The agent acts as a **senior supply chain analyst (~20 yrs)**. It runs on **Streamlit Community Cloud (free, private app)** with **Anthropic Claude**, and the **API key is pasted at runtime**. Minimum code. Repo `jaanavi28/supplychain_midterm`, branch `claude/elegant-fermat-huqak3`.
 
@@ -19,7 +21,7 @@ As specified earlier, with **Scope = Store 8023; SKUs 217390, 219009, 223245; we
 - **Success criterion:**
   - (a) The agent selects the lowest holdout-MAPE method for each SKU; for 217390 that method beats naive.
   - (b) 100% of numbers in outputs match tool output and the independent Excel check.
-  - (c) Review is triggered whenever MAPE > 30%, tracking signal is outside ±6, or a policy/memo conflict exists.
+  - (c) Review is triggered whenever MAPE > 30%, |TS| > 6, a policy/memo conflict exists, or a promo adjustment > +50%.
 - **Why agentic vs GPT:** the decision needs real calculations plus a validation step; the agent computes with tools, checks the results, and escalates by rule.
 - **Course concepts:** level/trend, MA, exponential smoothing, Holt, MAE/MAPE/bias/tracking signal, judgmental (promo) adjustment, safety stock, S&OP escalation.
 
@@ -51,6 +53,8 @@ As specified earlier, with **Scope = Store 8023; SKUs 217390, 219009, 223245; we
 - **SES (numpy loop, Chopra):** L0 = mean of training weeks; α minimizes in-sample MSE over grid 0.01–0.99 (step 0.01).
 - **Holt (numpy loop, Chopra):** L0, T0 = intercept and slope of a linear regression of training demand on t; α, β minimize in-sample MSE over the same grid.
 - `run_forecasts` outputs L0, T0, α, β, so they can be reproduced in Excel.
+- **Two fits:** holdout accuracy and σ come from the fit on weeks 1–118; the forward forecast comes from a refit of the selected method on all 130 weeks. Tool output and agent answers label every number with its fit.
+- **promo_lift:** lift % = average units in promo weeks / average units in normal weeks − 1, over all 130 weeks; normal = not featured, not display, discount < 5%; types: featured, display, discount, any.
 - Libraries: pandas, numpy (statsmodels removed).
 - **Expected holdout MAPE (for sanity check):**
 
@@ -69,16 +73,18 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 |---|---|
 | `search_knowledge` | Plain keyword match over doc sections; returns passages with filenames. |
 | `get_history` | Weekly sales, price, promo flags, data-quality notes for a SKU. |
-| `run_forecasts` | Fits the 4 methods, holdout metrics, fitted parameters, optional adjustment %. |
+| `run_forecasts` | Fits the 4 methods, holdout metrics (holdout fit), fitted parameters, forward forecast (refit), optional adjustment %. |
 | `promo_lift` | Historical uplift in featured/display/discount weeks vs normal weeks. |
 | `inventory_policy` | SS and ROP from σ_error, lead time, service level. |
-| `validate` | Recomputes key numbers; checks the adjustment is within the cap and backed by promo_lift; checks MAPE vs the 30% threshold and tracking signal vs ±6. |
+| `validate` | Recomputes key numbers; checks the adjustment equals promo_lift (approval flag if > +50%); checks MAPE vs 30% and |TS| vs 6. |
 | `request_human_review` | Logs a simulated escalation (no real orders/emails). |
 
 - **Prompt rules:**
   - Every number comes from a tool.
   - Pick the lowest-MAPE method.
-  - Promo adjustments use promo_lift output, capped by policy.
+  - Promo adjustments equal promo_lift output for the matching type; > +50% needs planner approval.
+  - Label each number as holdout fit (weeks 1–118) or refit (weeks 1–130).
+  - MAPE differences under 1 point are practical ties: report them.
   - Ask for a missing SKU, or state the policy-default service level.
   - Cite filenames.
   - Flag conflicts and escalate.
@@ -89,12 +95,12 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 ## 5. Knowledge base (= context files)
 - `data/demand_store8023.csv` (public)
 - `docs/forecasting_policy.md` (**synthetic**):
-  - Approved methods and the lowest-MAPE selection rule
-  - Service levels per SKU (219009 = 95%) and a default
-  - Adjustment cap
-  - **MAPE review threshold = 30%**
-  - **Tracking signal outside ±6 → human review**
-- `docs/sop_memo_v2.md` (**synthetic**): conflicts with the policy (219009 = 98%), for T4.
+  - Approved methods; lowest holdout MAPE wins; differences < 1 point are practical ties
+  - Service levels: default 95%; 217390 = 95%, 219009 = 95%, 223245 = 90%
+  - Promo adjustment = promo_lift output (no fixed cap); > +50% requires planner approval
+  - **Review triggers: MAPE > 30%, |TS| > 6, policy/memo conflict, adjustment > +50%**
+  - Agent never places orders or contacts suppliers
+- `docs/sop_memo_v2.md` (**synthetic**, dated 2026-10-28, later than the policy): sets 219009 to 98% for an upcoming promo period; does not say which document governs. For T4.
 - `docs/course_forecasting_concepts.md`: own-words summary of Chopra Ch. 7 + instructor slides/Excel (course definitions, formulas, error rules).
 - `docs/forecasting_methods.md`: project-specific definitions only (fixed-origin holdout, selection rule, σ, safety stock); refers to the course doc for the rest.
 - `inventory.csv`, `data_dictionary.md` (notes no product/store names, weak seasonality).
@@ -102,7 +108,7 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 
 ## 6. Tests / evals (pass criteria in each JSON before running)
 - **T1 Typical:** SKU 217390, complete inputs. Pass: picks the lowest-MAPE method, beats naive, matches Excel.
-- **T2 Changed:** SKU 219009 + a user-typed promo. Pass: forecast/SS/ROP move the correct direction; the adjustment comes from promo_lift and stays within the cap.
+- **T2 Changed:** SKU 219009 + a user-typed promo. Pass: forecast/SS/ROP increase; adjustment = promo_lift value for the promo type; planner-approval flag raised because lift > +50%; review also flagged for TS (naive TS = −9.46). **OPEN:** with σ from the holdout fit, SS does not change when the adjustment is applied (only the forecast and ROP rise) — owner to decide.
 - **T3 Missing:** no service level and/or no SKU. Pass: asks, or states the policy default.
 - **T4 Conflict:** policy vs memo on 219009, and/or a claimed surge the data contradicts. Pass: flags it, cites both, escalates.
 - **T5 Unsupported:** PO request / out-of-scope SKU / outside-KB question. Pass: states limits, simulated escalation.
