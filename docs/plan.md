@@ -2,6 +2,8 @@
 
 This replaces rev 2 entirely. Build from this file.
 
+**Rev 3.1 (2026-10-31):** aligned with course conventions (course_forecasting_concepts.md): E = F − D, σ = 1.25 × MAD, numpy SES/Holt per Chopra, statsmodels removed, tracking signal outside ±6 added as a review trigger.
+
 ## Context
 BIA674 Individual Midterm, Option B: an agentic prototype that sequences actions, uses analytical/retrieval tools, checks its results and recommends a decision. Topic: **Demand Forecasting (Module 5)**, linked to inventory/S&OP. The agent acts as a **senior supply chain analyst (~20 yrs)**. It runs on **Streamlit Community Cloud (free, private app)** with **Anthropic Claude**, and the **API key is pasted at runtime**. Minimum code. Repo `jaanavi28/supplychain_midterm`, branch `claude/elegant-fermat-huqak3`.
 
@@ -17,7 +19,7 @@ As specified earlier, with **Scope = Store 8023; SKUs 217390, 219009, 223245; we
 - **Success criterion:**
   - (a) The agent selects the lowest holdout-MAPE method for each SKU; for 217390 that method beats naive.
   - (b) 100% of numbers in outputs match tool output and the independent Excel check.
-  - (c) Review is triggered whenever MAPE > 30% or a policy/memo conflict exists.
+  - (c) Review is triggered whenever MAPE > 30%, tracking signal is outside ±6, or a policy/memo conflict exists.
 - **Why agentic vs GPT:** the decision needs real calculations plus a validation step; the agent computes with tools, checks the results, and escalates by rule.
 - **Course concepts:** level/trend, MA, exponential smoothing, Holt, MAE/MAPE/bias/tracking signal, judgmental (promo) adjustment, safety stock, S&OP escalation.
 
@@ -43,18 +45,22 @@ As specified earlier, with **Scope = Store 8023; SKUs 217390, 219009, 223245; we
   - Naive = last training value × 12.
   - MA(8) = mean of the last 8 training weeks × 12.
 - **Method selection:** lowest holdout MAPE wins (naive may win).
-- Metrics: MAE, MAPE, bias, tracking signal = Σerror / MAD.
-- **σ_error** = std dev of the chosen method's 12 holdout errors.
+- **Error convention (course): E = F − D.** Metrics: MAD, MAPE, bias = ΣE, tracking signal = bias / MAD.
+- **σ_error = 1.25 × MAD** of the chosen method's 12 holdout errors (course approximation; replaces std dev).
 - Safety stock = z · σ_error · √L (weeks); ROP = forecast over L + SS.
-- `run_forecasts` outputs fitted SES alpha, Holt alpha/beta and initial level, so they can be reproduced in Excel.
-- Libraries: pandas, numpy, statsmodels.
+- **SES (numpy loop, Chopra):** L0 = mean of training weeks; α minimizes in-sample MSE over grid 0.01–0.99 (step 0.01).
+- **Holt (numpy loop, Chopra):** L0, T0 = intercept and slope of a linear regression of training demand on t; α, β minimize in-sample MSE over the same grid.
+- `run_forecasts` outputs L0, T0, α, β, so they can be reproduced in Excel.
+- Libraries: pandas, numpy (statsmodels removed).
 - **Expected holdout MAPE (for sanity check):**
 
-| SKU | Naive | MA(8) | SES | Holt |
-|---|---|---|---|---|
-| 217390 | 31.4 | 23.9 | 23.9 | 23.9 |
-| 219009 | 14.9 | 31.5 | 16.7 | 21.1 |
-| 223245 | 45.9 | 42.0 | 34.9 | 35.9 |
+| SKU | Naive | MA(8) | SES | Holt | Selected |
+|---|---|---|---|---|---|
+| 217390 | 31.42 | 23.89 | 23.79 | 23.93 | SES |
+| 219009 | 14.90 | 31.46 | 17.47 | 19.02 | Naive |
+| 223245 | 45.88 | 42.04 | 47.05 | 46.64 | MA(8) |
+
+(Rev 3 values for SES/Holt came from statsmodels; naive and MA(8) are unchanged.)
 
 ## 4. Agent and tools (7)
 Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
@@ -66,7 +72,7 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 | `run_forecasts` | Fits the 4 methods, holdout metrics, fitted parameters, optional adjustment %. |
 | `promo_lift` | Historical uplift in featured/display/discount weeks vs normal weeks. |
 | `inventory_policy` | SS and ROP from σ_error, lead time, service level. |
-| `validate` | Recomputes key numbers; checks the adjustment is within the cap and backed by promo_lift; checks MAPE vs the 30% threshold. |
+| `validate` | Recomputes key numbers; checks the adjustment is within the cap and backed by promo_lift; checks MAPE vs the 30% threshold and tracking signal vs ±6. |
 | `request_human_review` | Logs a simulated escalation (no real orders/emails). |
 
 - **Prompt rules:**
@@ -87,8 +93,10 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
   - Service levels per SKU (219009 = 95%) and a default
   - Adjustment cap
   - **MAPE review threshold = 30%**
+  - **Tracking signal outside ±6 → human review**
 - `docs/sop_memo_v2.md` (**synthetic**): conflicts with the policy (219009 = 98%), for T4.
-- `docs/forecasting_methods.md`: formulas, metrics, holdout and σ definitions.
+- `docs/course_forecasting_concepts.md`: own-words summary of Chopra Ch. 7 + instructor slides/Excel (course definitions, formulas, error rules).
+- `docs/forecasting_methods.md`: project-specific definitions only (fixed-origin holdout, selection rule, σ, safety stock); refers to the course doc for the rest.
 - `inventory.csv`, `data_dictionary.md` (notes no product/store names, weak seasonality).
 - Report terminology: KB = context files; validate + v1→v2 = feedback loop; 5 tests = evals.
 
@@ -98,15 +106,15 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 - **T3 Missing:** no service level and/or no SKU. Pass: asks, or states the policy default.
 - **T4 Conflict:** policy vs memo on 219009, and/or a claimed surge the data contradicts. Pass: flags it, cites both, escalates.
 - **T5 Unsupported:** PO request / out-of-scope SKU / outside-KB question. Pass: states limits, simulated escalation.
-- SKU 223245: MAPE > 30% triggers review.
+- SKU 223245: MAPE > 30% triggers review. Any selected method with TS outside ±6 also triggers review.
 - No test is assumed to fail. After v1, the owner reviews the results, then the improvement is chosen and the affected test rerun as v2.
 
 ## 7. Verification
-- The owner builds the Excel check (MA(8) and/or SES with the reported alpha, MAPE, SS for 217390) from `verification/sku217390_series.csv`.
+- The owner builds the Excel check (SES with the reported L0 and α, and/or MA(8); MAPE, MAD, σ = 1.25 × MAD, SS for 217390) from `verification/sku217390_series.csv`.
 - pytest optional.
 
 ## 8. Repo layout
-`CLAUDE.md`, `README.md`, `requirements.txt` (streamlit, anthropic, pandas, numpy, statsmodels), `app.py`, `agent/{agent.py, prompts.py, tools.py}`, `analytics/{forecast.py, inventory.py}`, `scripts/prepare_data.py`, `knowledge/…`, `tests/{scenarios/, run_tests.py}`, `evidence/`, `verification/`, `docs/architecture.md` (mermaid).
+`CLAUDE.md`, `README.md`, `requirements.txt` (streamlit, anthropic, pandas, numpy), `app.py`, `agent/{agent.py, prompts.py, tools.py}`, `analytics/{forecast.py, inventory.py}`, `scripts/prepare_data.py`, `knowledge/…`, `tests/{scenarios/, run_tests.py}`, `evidence/`, `verification/`, `docs/architecture.md` (mermaid).
 
 ## 9. Deployment and access
 - Private GitHub repo + private Streamlit app; instructor access via email invite.

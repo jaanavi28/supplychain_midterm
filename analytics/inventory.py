@@ -1,6 +1,6 @@
 """Safety stock and reorder point.
 
-SS  = z * sigma_error * sqrt(L)      (sigma_error = std dev of the chosen method's 12 holdout errors)
+SS  = z * sigma_error * sqrt(L)      (sigma_error = 1.25 x MAD of the chosen method's 12 holdout errors)
 ROP = forecast over lead time + SS   (forecast over lead time = sum of the next L weekly forecasts)
 """
 import math

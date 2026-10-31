@@ -2,4 +2,3 @@ streamlit
 anthropic
 pandas
 numpy
-statsmodels
