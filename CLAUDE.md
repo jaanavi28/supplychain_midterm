@@ -1,6 +1,7 @@
 # BIA674 Midterm — Agentic Demand Forecasting Advisor
 
 ## Context
+- Final plan: docs/plan.md (rev 3). Build from it.
 - Graded class project. Rubric rewards clarity, not complexity.
 - Owner is not a developer: explain changes in plain language, one line per file changed.
 
