@@ -52,6 +52,8 @@ specific to this project.
 ## 7. Promotion adjustment
 - An optional adjustment % is applied on top of the refit baseline. It must equal the promo_lift tool output for the matching promo type (see forecasting_policy.md, Section 4).
 - promo_lift compares average units in promo weeks with average units in normal weeks (not featured, not on display, discount < 5%) over all 130 weeks.
+- If several promo types are named, the largest single-type lift is used (lifts are never added together).
+- Safety stock does **not** change with a promo adjustment: σ measures forecast uncertainty from the holdout, not the demand level. Only the forecast over lead time and the ROP rise.
 
 ## 8. σ and safety stock
 - **σ = 1.25 × MAD** of the selected method's 12 holdout errors from the **holdout fit** (course approximation, assumes normal errors), in units/week.

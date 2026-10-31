@@ -30,7 +30,8 @@ purpose: Sets the service levels, method selection rule, promotion adjustment ru
 - MAPE differences **under 1 percentage point are practical ties**. Still select the lowest, but report the tie and name the close alternatives.
 
 ## 4. Promotion adjustments
-- A promotion adjustment **must equal the promo_lift tool output** for the matching promotion type (featured, display, discount, or any if the type is unclear or combined). No fixed cap and no judgmental numbers.
+- A promotion adjustment **must equal the promo_lift tool output** for the matching promotion type (featured, display, discount, or "any" if no type is stated — state this as an assumption). No fixed cap and no judgmental numbers.
+- **Never stack lifts.** If more than one promotion type is named (e.g., featured and discounted), use the **largest single-type lift** and say so.
 - Adjustments **above +50% require planner approval** before the adjusted forecast is used for replenishment.
 - State the promo type used, the number of promo weeks behind the lift, and whether the sample is small.
 

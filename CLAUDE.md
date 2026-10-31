@@ -23,7 +23,7 @@
 - Selection rule: lowest holdout MAPE wins (naive may win).
 - σ for safety stock = 1.25 × MAD of the chosen method's 12 holdout errors.
 - Policy review triggers: MAPE > 30%, |TS| > 6, policy/memo conflict, promo adjustment > +50% (needs planner approval).
-- Promo adjustment = promo_lift output for the matching type (no fixed cap).
+- Promo adjustment = promo_lift output for the matching type (no fixed cap); never stack lifts — use the largest single-type lift. SS does not change with a promo.
 - Holdout accuracy and σ come from the fit on weeks 1–118; forward forecast from a refit on weeks 1–130. Label which fit each number comes from.
 - Libraries: streamlit, anthropic, pandas, numpy only (no statsmodels, no scikit-learn; search_knowledge uses plain keyword matching).
 - Verification export: verification/sku217390_series.csv.

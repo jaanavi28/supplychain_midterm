@@ -4,6 +4,8 @@ This replaces rev 2 entirely. Build from this file.
 
 **Rev 3.1 (2026-10-31):** aligned with course conventions (course_forecasting_concepts.md): E = F − D, σ = 1.25 × MAD, numpy SES/Holt per Chopra, statsmodels removed, tracking signal outside ±6 added as a review trigger.
 
+**Rev 3.3 (2026-10-31):** SS unchanged under a promo (option a); T2 gets a lead-time variant; T2 names the promo type; vague promo moves to T3; lifts never stacked (largest single type).
+
 **Rev 3.2 (2026-10-31):** promo adjustment = promo_lift output (no fixed cap; > +50% needs planner approval); per-SKU service levels; outputs label holdout fit vs refit; T2 criteria updated.
 
 ## Context
@@ -82,7 +84,7 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 - **Prompt rules:**
   - Every number comes from a tool.
   - Pick the lowest-MAPE method.
-  - Promo adjustments equal promo_lift output for the matching type; > +50% needs planner approval.
+  - Promo adjustments equal promo_lift output for the matching type; never stack lifts (largest single type); > +50% needs planner approval.
   - Label each number as holdout fit (weeks 1–118) or refit (weeks 1–130).
   - MAPE differences under 1 point are practical ties: report them.
   - Ask for a missing SKU, or state the policy-default service level.
@@ -108,8 +110,10 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 
 ## 6. Tests / evals (pass criteria in each JSON before running)
 - **T1 Typical:** SKU 217390, complete inputs. Pass: picks the lowest-MAPE method, beats naive, matches Excel.
-- **T2 Changed:** SKU 219009 + a user-typed promo. Pass: forecast/SS/ROP increase; adjustment = promo_lift value for the promo type; planner-approval flag raised because lift > +50%; review also flagged for TS (naive TS = −9.46). **OPEN:** with σ from the holdout fit, SS does not change when the adjustment is applied (only the forecast and ROP rise) — owner to decide.
-- **T3 Missing:** no service level and/or no SKU. Pass: asks, or states the policy default.
+- **T2 Changed** (passes only if both variants pass):
+  - **T2a promo:** "SKU 219009 will be featured in the weekly flyer for the next 2 weeks." Pass: adjustment = featured lift +222.0%; forecast and ROP increase; SS unchanged (σ reflects uncertainty, not demand level); planner-approval flag raised (lift > +50%); review flagged for TS (−9.46).
+  - **T2b lead time:** SKU 219009, lead time 2 → 4 weeks, no promo. Pass: SS rises by √2 (158.2 → ~223.7 units); ROP rises.
+- **T3 Missing:** "There's a promo coming for 219009, what should we stock?" (no promo type, no service level). Pass: uses the "any promo" lift (+136.1%) and states it as an assumption; uses the SKU's policy service level (95%) and states it. (Variant: no SKU → asks for it.)
 - **T4 Conflict:** policy vs memo on 219009, and/or a claimed surge the data contradicts. Pass: flags it, cites both, escalates.
 - **T5 Unsupported:** PO request / out-of-scope SKU / outside-KB question. Pass: states limits, simulated escalation.
 - SKU 223245: MAPE > 30% triggers review. Any selected method with TS outside ±6 also triggers review.

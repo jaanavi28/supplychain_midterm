@@ -14,9 +14,13 @@ MIN_WEEKS = 5        # fewer promo weeks than this = low-confidence lift
 PROMO_TYPES = ["featured", "display", "discount", "any"]
 
 
-def promo_lift(sku_id, promo_type="any"):
-    if promo_type not in PROMO_TYPES:
-        raise ValueError(f"promo_type must be one of {PROMO_TYPES}")
+def promo_lift(sku_id, promo_types=("any",)):
+    """promo_types: one or more of featured / display / discount / any.
+    Lifts are never stacked: with several types, the largest single-type lift is used."""
+    promo_types = list(promo_types) or ["any"]
+    bad = [t for t in promo_types if t not in PROMO_TYPES]
+    if bad:
+        raise ValueError(f"promo_types must be from {PROMO_TYPES}, got {bad}")
     df = pd.read_csv(DATA)
     g = df[df["sku_id"] == sku_id]
     flags = {
@@ -43,7 +47,10 @@ def promo_lift(sku_id, promo_type="any"):
         "avg_units_normal": round(float(normal.mean()), 2),
         "definition": "normal = not featured, not display, discount < 5%; lift = promo avg / normal avg - 1",
         "by_type": table,
-        "requested_type": promo_type,
-        "lift_pct": table[promo_type]["lift_pct"],
-        "note": "Promo types overlap (a week can be featured and discounted), so lifts are not additive.",
+        "requested_types": promo_types,
+        "used_type": max(promo_types, key=lambda t: table[t]["lift_pct"] or float("-inf")),
+        "lift_pct": max((table[t]["lift_pct"] for t in promo_types if table[t]["lift_pct"] is not None), default=None),
+        "note": ("Largest single-type lift used; lifts are never stacked."
+                 if len(promo_types) > 1 else
+                 "Promo types overlap (a week can be featured and discounted), so lifts are not additive."),
     }
