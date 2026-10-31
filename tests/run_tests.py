@@ -7,6 +7,8 @@ Usage (from the repo root):
 
 The API key is read from the ANTHROPIC_API_KEY environment variable, or asked for (hidden input).
 It is never written to disk. Output: evidence/<id>_<version>.json
+Existing evidence is never overwritten: if any selected scenario already has a file for this
+version, the script stops before running anything.
 
 Auto checks are quick factual checks on the trace and answer (which tools ran, which numbers
 appear). They help the review but do not replace it: the owner fills in owner_verdict.
@@ -28,10 +30,11 @@ from agent.agent import MODEL, run_agent  # noqa: E402
 
 SCENARIOS = ROOT / "tests" / "scenarios"
 EVIDENCE = ROOT / "evidence"
+NUMBER_TOLERANCE = 0.1
 
 
 def numbers_in(text):
-    text = text.replace(",", "").replace("−", "-")
+    text = re.sub(r"(?<=\d),(?=\d{3})", "", text).replace("−", "-")  # "1,347.8" -> "1347.8"
     return [float(x) for x in re.findall(r"-?\d+(?:\.\d+)?", text)]
 
 
@@ -44,8 +47,10 @@ def auto_check(checks, answer, trace):
     for name in checks.get("tools_not_called", []):
         results.append({"check": f"tool NOT called: {name}", "pass": name not in called})
     for x in checks.get("numbers_in_answer", []):
-        # sign-insensitive ("fell 26.9%" vs "-26.9%"); signs are checked in the owner review
-        results.append({"check": f"number in answer: {x}", "pass": any(abs(abs(f) - abs(x)) < 0.05 for f in found)})
+        # thousands separators stripped; tolerance +/-0.1; sign-insensitive ("fell 26.9%" vs "-26.9%"),
+        # signs are checked in the owner review
+        results.append({"check": f"number in answer: {x}",
+                        "pass": any(abs(abs(f) - abs(x)) <= NUMBER_TOLERANCE + 1e-9 for f in found)})
     if checks.get("no_adjustment_used"):
         adj = [t["input"].get("adjustment_pct", 0) for t in trace
                if t.get("tool") in ("run_forecasts", "inventory_policy", "validate")]
@@ -77,7 +82,8 @@ def run_scenario(path, api_key, version):
     }
     EVIDENCE.mkdir(exist_ok=True)
     out = EVIDENCE / f"{sc['id']}_{version}.json"
-    out.write_text(json.dumps(evidence, indent=2, default=str))
+    with open(out, "x") as f:  # "x" = fail rather than overwrite existing evidence
+        f.write(json.dumps(evidence, indent=2, default=str))
     return sc["id"], evidence["auto_checks_all_pass"], out
 
 
@@ -90,6 +96,15 @@ def main():
     paths = sorted(SCENARIOS.glob("*.json"))
     if args.only:
         paths = [p for p in paths if p.stem in args.only]
+    # Each scenario runs once per prompt version; the first result is the evidence.
+    existing = [EVIDENCE / f"{p.stem}_{args.version}.json" for p in paths
+                if (EVIDENCE / f"{p.stem}_{args.version}.json").exists()]
+    if existing:
+        print("STOPPED: evidence already exists and will not be overwritten:")
+        for e in existing:
+            print("  ", e.relative_to(ROOT))
+        print("Nothing was run. Use --only to run the scenarios that have no evidence yet.")
+        sys.exit(1)
     for p in paths:
         sid, ok, out = run_scenario(p, api_key, args.version)
         print(f"{sid}: auto checks {'all pass' if ok else 'SOME FAIL'} -> {out.relative_to(ROOT)}")
