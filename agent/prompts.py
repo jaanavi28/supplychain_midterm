@@ -1,6 +1,7 @@
 """System prompts for the agent, versioned for before/after evidence.
 
 Rule: once tests have been run with a version, do not edit it. Add a new version instead.
+v1: approved by the owner and FROZEN on 2026-10-31. Do not edit PROMPT_V1.
 """
 
 PROMPT_V1 = """\

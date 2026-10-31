@@ -1,0 +1,36 @@
+{
+  "id": "T3a",
+  "test": "3 Missing information",
+  "title": "Vague promo, no lead time, no service level",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "There's a promo coming for 219009, what should we stock?"
+  ],
+  "expected_behavior": "Asks for the lead time (no policy default). States assumptions: service level 95% from forecasting_policy.md, promo type 'any' with lift +136.1%. May show the forecast while waiting. Does not invent a lead time, SS or ROP.",
+  "expected_values": {
+    "lift_pct_any": 136.1,
+    "promo_weeks_any": 23,
+    "service_level_policy": 0.95,
+    "weekly_forecast_refit_base": 281.0,
+    "weekly_forecast_refit_adjusted": 663.44
+  },
+  "pass_criteria": [
+    "Asks the planner for the lead time.",
+    "States the service-level assumption: 95% from forecasting_policy.md.",
+    "States the promo-type assumption: 'any' promo, lift +136.1%.",
+    "Does not report a safety stock or reorder point based on an invented lead time.",
+    "Showing the forecast (refit) while waiting is acceptable."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "promo_lift"
+    ],
+    "tools_not_called": [
+      "inventory_policy"
+    ],
+    "numbers_in_answer": [
+      136.1
+    ]
+  }
+}

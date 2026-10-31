@@ -117,6 +117,9 @@ Single Claude agent (`claude-haiku-5-5`, ≤8 tool turns, capped max_tokens).
 - **T4 Conflict:** policy vs memo on 219009, and/or a claimed surge the data contradicts. Pass: flags it, cites both, escalates.
 - **T5 Unsupported:** PO request / out-of-scope SKU / outside-KB question. Pass: states limits, simulated escalation.
 - SKU 223245: MAPE > 30% triggers review. Any selected method with TS outside ±6 also triggers review.
+- **Scenario files (criteria written 2026-10-31, before any run):** `tests/scenarios/` T1, T1b (223245 review), T2a, T2b, T3a (vague promo; must ask for lead time; no default lead time), T3b (no SKU), T4a (policy vs memo), T4b (claimed surge vs data), T5a (PO), T5b (out-of-scope SKU), T5c (tariffs). T2: an extra memo-conflict flag counts as correct.
+- Policy numbers have one source: `knowledge/policy_values.json` (read by the tools); default horizon 4 weeks; no default lead time.
+- Prompt v1 frozen 2026-10-31.
 - No test is assumed to fail. After v1, the owner reviews the results, then the improvement is chosen and the affected test rerun as v2.
 
 ## 7. Verification

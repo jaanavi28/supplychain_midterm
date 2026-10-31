@@ -1,0 +1,40 @@
+{
+  "id": "T2b",
+  "test": "2 Changed conditions (lead time)",
+  "title": "Lead time 2 to 4 weeks on 219009, no promo",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "SKU 219009, no promotion planned. Our lead time has gone from 2 weeks to 4 weeks. Service level 95%. What are the new safety stock and reorder point?"
+  ],
+  "expected_behavior": "SS rises by sqrt(2) (158.2 to 223.8 units) and ROP rises (720.2 to 1347.8). Review flagged for TS; a memo-conflict flag is also correct.",
+  "expected_values": {
+    "lead_time_2": {
+      "safety_stock_units": 158.2,
+      "reorder_point_units": 720.2
+    },
+    "lead_time_4": {
+      "safety_stock_units": 223.8,
+      "forecast_over_lead_time_units": 1124.0,
+      "reorder_point_units": 1347.8
+    },
+    "note": "158.2 x sqrt(2) = 223.7 from the rounded SS; unrounded 1.6449 x 68.02 x 2 = 223.77 -> 223.8"
+  },
+  "pass_criteria": [
+    "SS at 4 weeks = 223.8 units (about sqrt(2) x 158.2) and ROP at 4 weeks = 1347.8 units.",
+    "Shows that SS and ROP rise vs lead time 2 weeks (158.2 / 720.2), whether or not it computes both.",
+    "Flags review for |TS| > 6 and calls request_human_review. An additional memo-conflict flag counts as correct.",
+    "T2 passes only if T2a and T2b both pass."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "inventory_policy",
+      "validate",
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      223.8,
+      1347.8
+    ]
+  }
+}

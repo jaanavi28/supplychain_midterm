@@ -1,0 +1,22 @@
+{
+  "id": "T3b",
+  "test": "3 Missing information",
+  "title": "No SKU given",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "What should the reorder point be for the next month? Lead time is 2 weeks."
+  ],
+  "expected_behavior": "Asks which SKU; does not pick one or report any numbers.",
+  "expected_values": {},
+  "pass_criteria": [
+    "Asks which SKU (may list the three in scope).",
+    "Reports no forecast, SS or ROP numbers."
+  ],
+  "auto_checks": {
+    "tools_not_called": [
+      "run_forecasts",
+      "inventory_policy"
+    ]
+  }
+}

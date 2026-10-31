@@ -17,14 +17,14 @@ KNOWLEDGE = Path(__file__).resolve().parent.parent / "knowledge"
 DOC_FILES = sorted((KNOWLEDGE / "docs").glob("*.md")) + [KNOWLEDGE / "data_dictionary.md"]
 POLICY_FILE = "forecasting_policy.md"
 
-SKUS = [217390, 219009, 223245]
-
-# Mirrors forecasting_policy.md (sections 2, 4, 5). Keep the two in sync.
-POLICY_SERVICE_LEVEL = {217390: 0.95, 219009: 0.95, 223245: 0.90}
-DEFAULT_SERVICE_LEVEL = 0.95
-MAPE_REVIEW_PCT = 30
-TS_REVIEW = 6
-ADJUSTMENT_APPROVAL_PCT = 50
+# Single source for policy numbers (stated in forecasting_policy.md).
+POLICY = json.loads((KNOWLEDGE / "policy_values.json").read_text())
+POLICY_SERVICE_LEVEL = {int(k): v for k, v in POLICY["service_level_by_sku"].items()}
+SKUS = sorted(POLICY_SERVICE_LEVEL)  # covered SKUs = those with a policy service level
+DEFAULT_HORIZON = POLICY["default_horizon_weeks"]
+MAPE_REVIEW_PCT = POLICY["mape_review_threshold_pct"]
+TS_REVIEW = POLICY["tracking_signal_limit"]
+ADJUSTMENT_APPROVAL_PCT = POLICY["adjustment_approval_threshold_pct"]
 TOLERANCE = 0.005  # validate: reported numbers must be within 0.5% of the recomputed value
 
 
@@ -101,8 +101,9 @@ def get_history(sku_id, last_n_weeks=12):
 
 
 # ---------- 3. run_forecasts ----------
-def tool_run_forecasts(sku_id, horizon_weeks=4, adjustment_pct=0.0):
+def tool_run_forecasts(sku_id, horizon_weeks=None, adjustment_pct=0.0):
     sku_id = _check_sku(sku_id)
+    horizon_weeks = horizon_weeks or DEFAULT_HORIZON
     if not 1 <= int(horizon_weeks) <= 12:
         raise ToolError("horizon_weeks must be 1-12.")
     return run_forecasts(sku_id, horizon=int(horizon_weeks), adjustment_pct=float(adjustment_pct))
@@ -124,7 +125,7 @@ def inventory_policy(sku_id, lead_time_weeks, service_level, adjustment_pct=0.0)
     L = int(lead_time_weeks)
     if not 1 <= L <= 12:
         raise ToolError("lead_time_weeks must be 1-12.")
-    fc = run_forecasts(sku_id, horizon=max(L, 4), adjustment_pct=float(adjustment_pct))
+    fc = run_forecasts(sku_id, horizon=max(L, DEFAULT_HORIZON), adjustment_pct=float(adjustment_pct))
     try:
         inv = _inventory_policy(fc["future_forecast"]["adjusted"], fc["sigma_error"], L, float(service_level))
     except ValueError as e:
@@ -171,7 +172,7 @@ def validate(sku_id, lead_time_weeks, service_level, adjustment_pct=0.0, promo_t
     sigma_error, safety_stock_units, reorder_point_units."""
     sku_id = _check_sku(sku_id)
     reported = reported or {}
-    fc = run_forecasts(sku_id, horizon=max(int(lead_time_weeks), 4), adjustment_pct=float(adjustment_pct))
+    fc = run_forecasts(sku_id, horizon=max(int(lead_time_weeks), DEFAULT_HORIZON), adjustment_pct=float(adjustment_pct))
     sel = fc["selected_method"]
     m = fc["methods"][sel]
     inv = inventory_policy(sku_id, lead_time_weeks, service_level, adjustment_pct)
@@ -267,7 +268,7 @@ TOOLS = [
                     "refits it on weeks 1-130 and forecasts ahead (refit). Optional adjustment_pct for a promo.",
      "input_schema": {"type": "object", "properties": {
          "sku_id": SKU_PROP,
-         "horizon_weeks": {"type": "integer", "description": "Weeks to forecast ahead, 1-12 (default 4)."},
+         "horizon_weeks": {"type": "integer", "description": "Weeks to forecast ahead, 1-12 (policy default 4)."},
          "adjustment_pct": {"type": "number", "description": "Promo adjustment %, must equal promo_lift output. Default 0."}},
          "required": ["sku_id"]}},
     {"name": "promo_lift",

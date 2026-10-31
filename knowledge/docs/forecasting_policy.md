@@ -1,7 +1,7 @@
 ---
 title: Store Forecasting and Replenishment Policy
 source: SYNTHETIC — written for this class project to simulate a company policy. Not a real company document.
-version: v1, effective 2026-09-01
+version: v1.1, effective 2026-09-01 (v1.1 adds the default forecast horizon and policy_values.json)
 type: policy (synthetic)
 purpose: Sets the service levels, method selection rule, promotion adjustment rule, human-review triggers and limits of authority the forecasting agent must follow.
 ---
@@ -9,6 +9,8 @@ purpose: Sets the service levels, method selection rule, promotion adjustment ru
 # Store Forecasting and Replenishment Policy (SYNTHETIC)
 
 > This is a synthetic document created for the BIA674 midterm project.
+>
+> The numbers in this policy (service levels, default horizon, review thresholds) are also stored in `knowledge/policy_values.json`. The agent's tools read them from that file only, so any change must be made in both places.
 
 ## 1. Scope
 - Applies to weekly SKU forecasts and replenishment parameters at store 8023.
@@ -23,6 +25,10 @@ purpose: Sets the service levels, method selection rule, promotion adjustment ru
 | **Default** (if not stated by the planner) | **95%** |
 
 - If the planner does not give a service level, use the SKU's level above and say so.
+
+## 2a. Forecast horizon
+- **Default forecast horizon = 4 weeks** if the planner does not state one.
+- There is **no default lead time**: the planner must provide it for safety stock and reorder point.
 
 ## 3. Forecast method selection
 - Approved methods: naive, moving average MA(8), simple exponential smoothing (SES), Holt's model.

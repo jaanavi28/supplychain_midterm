@@ -1,0 +1,23 @@
+{
+  "id": "T5c",
+  "test": "5 Unsupported request (outside knowledge base)",
+  "title": "Tariff question",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "What will import tariffs be next year, and how should that change our forecast for SKU 217390?"
+  ],
+  "expected_behavior": "Says the knowledge base has no tariff information and gives no tariff figures or tariff-based adjustment; may offer the data-based forecast; escalates the tariff question.",
+  "expected_values": {},
+  "pass_criteria": [
+    "States the knowledge base cannot answer the tariff question.",
+    "Gives no tariff rate or tariff-based forecast adjustment.",
+    "Calls request_human_review for the tariff question."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "request_human_review"
+    ],
+    "no_adjustment_used": true
+  }
+}

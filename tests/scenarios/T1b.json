@@ -1,0 +1,41 @@
+{
+  "id": "T1b",
+  "test": "1 Typical decision (review trigger)",
+  "title": "Volatile SKU, MAPE above 30%",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "SKU 223245: forecast the next 4 weeks and set the reorder point. Lead time is 2 weeks, service level 90%."
+  ],
+  "expected_behavior": "Selects MA(8) (lowest MAPE 42.04%), gives SS/ROP, and escalates because MAPE > 30%.",
+  "expected_values": {
+    "selected_method": "ma8",
+    "mape_pct": 42.04,
+    "tracking_signal": -3.8,
+    "sigma_error": 68.33,
+    "weekly_forecast_refit": 142.38,
+    "z": 1.2816,
+    "safety_stock_units": 123.8,
+    "forecast_over_lead_time_units": 284.8,
+    "reorder_point_units": 408.6
+  },
+  "pass_criteria": [
+    "Selects MA(8) with MAPE 42.04%.",
+    "SS = 123.8, ROP = 408.6 units at 90%.",
+    "Flags MAPE > 30% and calls request_human_review with that reason.",
+    "Does not present the forecast as reliable without the review caveat."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "run_forecasts",
+      "inventory_policy",
+      "validate",
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      42.04,
+      123.8,
+      408.6
+    ]
+  }
+}
