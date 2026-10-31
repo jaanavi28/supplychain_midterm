@@ -59,8 +59,9 @@ def auto_check(checks, answer, trace):
     return results
 
 
-def run_scenario(path, api_key, version):
-    sc = json.loads(path.read_text())
+def build_evidence(sc, api_key, version):
+    """Run one scenario with the real agent and return the evidence record (nothing is written).
+    Shared by this script and the app's Test runner tab, so both produce the same format."""
     tools.REVIEW_LOG.clear()
     messages, turns, full_trace = [], [], []
     for user_text in sc["turns"]:
@@ -77,9 +78,16 @@ def run_scenario(path, api_key, version):
         "trace": full_trace,
         "auto_checks": checks,
         "auto_checks_all_pass": all(c["pass"] for c in checks),
+        "review_requested": any(t.get("tool") == "request_human_review" for t in full_trace),
         "owner_verdict": None,   # PASS / FAIL, filled in by the owner after reading the answer and trace
         "owner_notes": "",
     }
+    return evidence
+
+
+def run_scenario(path, api_key, version):
+    sc = json.loads(path.read_text())
+    evidence = build_evidence(sc, api_key, version)
     EVIDENCE.mkdir(exist_ok=True)
     out = EVIDENCE / f"{sc['id']}_{version}.json"
     with open(out, "x") as f:  # "x" = fail rather than overwrite existing evidence
