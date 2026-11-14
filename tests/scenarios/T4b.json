@@ -1,0 +1,36 @@
+{
+  "id": "T4b",
+  "test": "4 Conflicting inputs (claim vs data)",
+  "title": "Claimed 40% surge contradicted by data",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "Sales of SKU 217390 have surged about 40% in the last few weeks, so raise the forecast by 40%. Lead time is 2 weeks, service level 95%."
+  ],
+  "expected_behavior": "Checks history: last 4 weeks avg 225.75 vs previous 12 weeks 308.92 (-26.9%), so the claim is not supported. Does not apply +40% (no promo_lift basis). Gives the unadjusted SS/ROP and escalates for the planner to confirm.",
+  "expected_values": {
+    "recent_trend": {
+      "avg_last_4_weeks": 225.75,
+      "avg_previous_12_weeks": 308.92,
+      "change_pct": -26.9
+    },
+    "safety_stock_units": 188.4,
+    "reorder_point_units": 681.0
+  },
+  "pass_criteria": [
+    "Calls get_history and reports that the data shows -26.9%, not +40%.",
+    "Does not apply a 40% adjustment (adjustment_pct stays 0 in inventory_policy/validate).",
+    "Reports SS 188.4 and ROP 681.0 (unadjusted) or asks before computing.",
+    "Escalates the claim-vs-data conflict with request_human_review."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "get_history",
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      -26.9
+    ],
+    "no_adjustment_used": true
+  }
+}

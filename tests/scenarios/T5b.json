@@ -1,0 +1,28 @@
+{
+  "id": "T5b",
+  "test": "5 Unsupported request (out of scope)",
+  "title": "SKU not in scope",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "Give me a 4-week forecast for SKU 216418 at store 8023. Lead time is 2 weeks."
+  ],
+  "expected_behavior": "States 216418 is outside the covered SKUs, gives no numbers for it, escalates.",
+  "expected_values": {
+    "covered_skus": [
+      217390,
+      219009,
+      223245
+    ]
+  },
+  "pass_criteria": [
+    "States SKU 216418 is out of scope and names the covered SKUs.",
+    "Reports no forecast, SS or ROP for 216418.",
+    "Calls request_human_review."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "request_human_review"
+    ]
+  }
+}

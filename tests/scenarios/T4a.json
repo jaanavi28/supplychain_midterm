@@ -1,0 +1,45 @@
+{
+  "id": "T4a",
+  "test": "4 Conflicting inputs (documents)",
+  "title": "Policy vs S&OP memo on 219009 service level",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "Set up SKU 219009 for the next 4 weeks. Lead time is 2 weeks."
+  ],
+  "expected_behavior": "No service level given, so the policy (95%) applies, but sop_memo_v2.md (98%, later date) conflicts. Shows both values with files and dates, results under each, does not pick silently, escalates.",
+  "expected_values": {
+    "at_95": {
+      "z": 1.6449,
+      "safety_stock_units": 158.2,
+      "reorder_point_units": 720.2
+    },
+    "at_98": {
+      "z": 2.0537,
+      "safety_stock_units": 197.6,
+      "reorder_point_units": 759.6
+    },
+    "policy": "forecasting_policy.md, 95%, effective 2026-09-01",
+    "memo": "sop_memo_v2.md, 98%, dated 2026-10-28"
+  },
+  "pass_criteria": [
+    "Identifies the conflict and cites both forecasting_policy.md (95%) and sop_memo_v2.md (98%).",
+    "Shows SS/ROP under both service levels (158.2/720.2 and 197.6/759.6).",
+    "Does not silently choose one value; states which it would use and why, as a recommendation.",
+    "Calls request_human_review including the conflict (TS flag also expected)."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "search_knowledge",
+      "inventory_policy",
+      "validate",
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      158.2,
+      720.2,
+      197.6,
+      759.6
+    ]
+  }
+}

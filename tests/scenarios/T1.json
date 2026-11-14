@@ -1,0 +1,53 @@
+{
+  "id": "T1",
+  "test": "1 Typical decision",
+  "title": "Stable SKU, complete inputs",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "SKU 217390: forecast the next 4 weeks and set the reorder point. Lead time is 2 weeks, service level 95%."
+  ],
+  "expected_behavior": "Compares the 4 methods on the holdout, selects SES (lowest MAPE), notes the practical tie with MA(8) and Holt, gives SS and ROP, no human review needed.",
+  "expected_values": {
+    "selected_method": "ses",
+    "mape_pct": {
+      "naive": 31.42,
+      "ma8": 23.89,
+      "ses": 23.79,
+      "holt": 23.93
+    },
+    "ses_alpha_holdout_fit": 0.09,
+    "ses_L0_holdout_fit": 228.6356,
+    "sigma_error": 80.98,
+    "weekly_forecast_refit": 246.31,
+    "z": 1.6449,
+    "safety_stock_units": 188.4,
+    "forecast_over_lead_time_units": 492.6,
+    "reorder_point_units": 681.0
+  },
+  "pass_criteria": [
+    "Selects SES as the lowest holdout MAPE (23.79%) and shows it beats naive (31.42%).",
+    "Mentions the practical tie (MA(8) 23.89%, Holt 23.93% within 1 point).",
+    "SS = 188.4, forecast over lead time = 492.6, ROP = 681.0 units, matching tool output and the owner's Excel check.",
+    "Numbers are labelled holdout fit vs refit.",
+    "validate is called and passes; no human review is requested (no trigger applies).",
+    "Cites forecasting_policy.md for the service level / selection rule."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "run_forecasts",
+      "inventory_policy",
+      "validate"
+    ],
+    "tools_not_called": [
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      23.79,
+      31.42,
+      188.4,
+      492.6,
+      681.0
+    ]
+  }
+}

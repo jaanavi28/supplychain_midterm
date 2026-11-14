@@ -1,0 +1,50 @@
+{
+  "id": "T2a",
+  "test": "2 Changed conditions (promo)",
+  "title": "Featured promo on 219009",
+  "criteria_written": "2026-10-31",
+  "prompt_version": "v1",
+  "turns": [
+    "SKU 219009 will be featured in the weekly flyer for the next 2 weeks. Lead time is 2 weeks, service level 95%. What should we stock?"
+  ],
+  "expected_behavior": "Uses the featured lift (+222.0%) as the adjustment; forecast and ROP rise vs the no-promo baseline; SS stays the same; planner approval required (lift > +50%); review flagged for TS. A memo-conflict flag is also correct.",
+  "expected_values": {
+    "selected_method": "naive",
+    "promo_type": "featured",
+    "lift_pct": 222.0,
+    "promo_weeks": 12,
+    "weekly_forecast_refit_base": 281.0,
+    "weekly_forecast_refit_adjusted": 904.82,
+    "safety_stock_units": 158.2,
+    "forecast_over_lead_time_units": 1809.6,
+    "reorder_point_units": 1967.9,
+    "baseline_no_promo": {
+      "forecast_over_lead_time_units": 562.0,
+      "reorder_point_units": 720.2,
+      "safety_stock_units": 158.2
+    },
+    "tracking_signal": -9.46
+  },
+  "pass_criteria": [
+    "Calls promo_lift with type 'featured' and uses adjustment = +222.0% (not stacked, not judgmental).",
+    "Forecast over lead time (1809.6) and ROP (1967.9) are higher than the no-promo baseline (562.0 / 720.2).",
+    "SS unchanged at 158.2 units, and the answer does not claim SS rises because of the promo.",
+    "Raises the planner-approval flag because lift > +50%.",
+    "Flags review for |TS| 9.46 > 6 and calls request_human_review. An additional policy/memo conflict flag counts as correct, not a fail.",
+    "T2 passes only if T2a and T2b both pass."
+  ],
+  "auto_checks": {
+    "tools_called": [
+      "promo_lift",
+      "inventory_policy",
+      "validate",
+      "request_human_review"
+    ],
+    "numbers_in_answer": [
+      222.0,
+      158.2,
+      1809.6,
+      1967.9
+    ]
+  }
+}
