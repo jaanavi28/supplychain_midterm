@@ -9,7 +9,8 @@ and reorder points, checks its own numbers, and escalates to a human when the po
 - Option B (agentic prototype): one Claude agent (`claude-haiku-5-5`) with 7 tools.
 - Data: public Kaggle / Analytics Vidhya retail demand dataset (train.csv), weekly, Jan 2011 to Jul 2013.
   The policy and S&OP memo are **synthetic** and labelled as such.
-- Full plan: `docs/plan.md`.
+- Full plan: `docs/plan.md`. Architecture and workflow diagram: `docs/architecture.md`.
+- Scope: store 8023 and 3 of its 21 SKUs, chosen as stable (217390), promotion-driven (219009) and volatile (223245). The retail setting is fictional on anonymous data. Sales are used as demand.
 
 ## How it works
 
@@ -20,7 +21,7 @@ and reorder points, checks its own numbers, and escalates to a human when the po
 3. All numbers come from the tools (`analytics/`), never from the model.
 4. `validate` recomputes the numbers and applies the review triggers
    (MAPE > 30%, |TS| > 6, policy/memo conflict, promo adjustment > +50%).
-5. Escalations and orders are **simulated**; nothing is sent anywhere.
+5. There is no ordering tool. Escalations are **simulated** tickets (e.g. REV-001) shown in the execution trace; nothing is sent anywhere. The agent recommends and the planner decides; promo adjustments over +50% carry a planner-approval flag.
 
 ## Repository layout
 
@@ -33,8 +34,21 @@ and reorder points, checks its own numbers, and escalates to a human when the po
 | `scripts/prepare_data.py` | Builds the prepared dataset from the raw file |
 | `tests/scenarios/` | Test scenarios with pass criteria written before running |
 | `tests/run_tests.py` | Command-line test runner (same evidence format as the app) |
-| `verification/` | Series export for the independent Excel check |
+| `verification/` | Series export and `sku217390_check.xlsx`, the independent Excel check (live formulas; Holt not covered) |
 | `evidence/` | Saved test evidence (added after the runs) |
+
+## Knowledge base: access, citing, conflicts, gaps
+- **Access:** `search_knowledge` does plain keyword matching over the sections of the files in `knowledge/` and returns passages with filenames. Policy numbers come from `knowledge/policy_values.json`.
+- **Citing:** the prompt requires a filename for every rule or definition used.
+- **Conflicts:** if documents disagree, the agent shows both values with dates, computes results under each, recommends one and escalates (Test T4).
+- **Gaps:** if the knowledge base cannot answer, the agent says so (Test T5).
+- **Updating:** change the files in `knowledge/`, rerun `scripts/prepare_data.py` for new raw data, and update `knowledge/inventory.csv`.
+
+## Independent check
+Open `verification/sku217390_check.xlsx`. The Check sheet recomputes naive, MA(8), SES, accuracy measures, safety stock and reorder point for SKU 217390 with Excel formulas only, and can be compared with the `run_forecasts` and `inventory_policy` output. It does not cover Holt.
+
+## AI disclosure
+Claude (Anthropic) helped write the code, documents and the Excel check. The author must state here what they independently checked and changed before submitting.
 
 ## Requirements
 
