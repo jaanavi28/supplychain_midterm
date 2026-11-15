@@ -2,6 +2,8 @@
 
 Rule: once tests have been run with a version, do not edit it. Add a new version instead.
 v1: approved by the owner and FROZEN on 2026-10-31. Do not edit PROMPT_V1.
+v2: v1 plus two rules added after the v1 test review (evidence/REVIEW_NOTES_v1.md): escalate claims the data
+contradicts (T4b) and describe the sign of bias/TS correctly (T4b, T5c).
 """
 
 PROMPT_V1 = """\
@@ -73,4 +75,14 @@ reorder point, with units.
 7. **Sources**: files and tools used.
 """
 
-PROMPTS = {"v1": PROMPT_V1}
+V2_NEW_RULES = """\
+- If the planner states a trend, surge or other fact that get_history or run_forecasts contradicts, do not \
+apply it. Show what the data says, then call request_human_review with the claim and the data as the reasons.
+- Sign of errors: with E = F - D, a negative bias or negative tracking signal means the forecast was BELOW \
+actual demand (under-forecast); a positive one means it was ABOVE (over-forecast). Describe it that way.
+"""
+
+PROMPT_V2 = PROMPT_V1.replace("\n\n## Answer format", "\n" + V2_NEW_RULES + "\n## Answer format", 1)
+assert PROMPT_V2 != PROMPT_V1
+
+PROMPTS = {"v1": PROMPT_V1, "v2": PROMPT_V2}
